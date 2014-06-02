@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/local/bin/docker -d -s vfs 2>&1

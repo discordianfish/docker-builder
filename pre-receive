@@ -1,0 +1,44 @@
+#!/bin/bash
+exec 2>&1
+
+set -e
+set -x
+REGISTRY=`cat /etc/registry`
+
+while read oldrev newrev refname
+do
+  TAG=`echo $refname | cut -d\/ -f3`
+  [ "$TAG" == "master" ] && TAG=latest
+
+  TMP=/tmp/$newrev
+  if [ -e "${TMP}.log" ]
+  then
+    echo "Building revision failed or is still running:"
+    cat $TMP.log
+    exit 1
+  fi
+
+  mkdir "$TMP"
+  echo "old: $oldrev, new: $newrev, name: $refname"
+  git log --name-status $newrev --pretty="format:" | awk '{print $2}' | cut -d\/ -f1 | sort | uniq > "${TMP}.CHANGES"
+  git archive $newrev | tar -C "$TMP" -xf -
+  cd "$TMP"
+  cat "${TMP}.CHANGES" | while read d
+  do
+    [ -d "$d" ] || continue
+    [ -e "$d/Dockerfile" ] || continue
+    rev=$( echo $newrev | cut -c1-7 )
+    if [ -n "$REGISTRY" ]
+    then
+      image="$REGISTRY/$d"
+    else
+      image="$d"
+    fi
+    docker build -t "$image:$rev" "$d"
+    docker tag "$image:$rev" "$image:$TAG"
+    docker push "$image"
+  done | tee "${TMP}.log"
+  rm -r "$TMP"
+  rm "${TMP}.log"
+done
+
