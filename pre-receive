@@ -9,6 +9,7 @@ while read oldrev newrev refname
 do
   TAG=`echo $refname | cut -d\/ -f3`
   [ "$TAG" == "master" ] && TAG=latest
+  rev=$( echo $newrev | cut -c1-7 )
 
   TMP=/tmp/$newrev
   if [ -e "${TMP}.log" ]
@@ -20,14 +21,20 @@ do
 
   mkdir "$TMP"
   echo "old: $oldrev, new: $newrev, name: $refname"
-  git log --name-status $newrev --pretty="format:" | awk '{print $2}' | cut -d\/ -f1 | sort | uniq > "${TMP}.CHANGES"
+  if [ "$oldrev" != "0000000000000000000000000000000000000000" ]
+  then
+    range="${oldrev}..${newrev}"
+  else
+    range=$newrev
+  fi
+  git log --name-status $range --pretty="format:" | awk '{print $2}' | cut -d\/ -f1 | sort | uniq > "${TMP}.CHANGES"
   git archive $newrev | tar -C "$TMP" -xf -
   cd "$TMP"
+  echo "Building: `cat ${TMP}.CHANGES`"
   cat "${TMP}.CHANGES" | while read d
   do
     [ -d "$d" ] || continue
     [ -e "$d/Dockerfile" ] || continue
-    rev=$( echo $newrev | cut -c1-7 )
     if [ -n "$REGISTRY" ]
     then
       image="$REGISTRY/$d"
