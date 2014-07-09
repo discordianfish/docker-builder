@@ -2,7 +2,6 @@
 exec 2>&1
 
 set -e
-set -x
 REGISTRY=`cat /etc/registry`
 
 while read oldrev newrev refname
@@ -20,7 +19,6 @@ do
   fi
 
   mkdir "$TMP"
-  echo "old: $oldrev, new: $newrev, name: $refname"
   if [ "$oldrev" != "0000000000000000000000000000000000000000" ]
   then
     range="${oldrev}..${newrev}"
@@ -31,7 +29,7 @@ do
   git archive $newrev | tar -C "$TMP" -xf -
   cd "$TMP"
   echo "Building: `cat ${TMP}.CHANGES`"
-  cat "${TMP}.CHANGES" | while read d
+  while read d
   do
     [ -d "$d" ] || continue
     [ -e "$d/Dockerfile" ] || continue
@@ -44,7 +42,7 @@ do
     docker build -t "$image:$rev" "$d"
     docker tag "$image:$rev" "$image:$TAG"
     docker push "$image"
-  done | tee "${TMP}.log"
+  done < "${TMP}.CHANGES" | tee "${TMP}.log"
   rm -r "$TMP"
   rm "${TMP}.log"
 done
