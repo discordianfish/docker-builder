@@ -39,7 +39,7 @@ do
     else
       image="$d"
     fi
-    docker pull $(awk '/^FROM\s/ { print /:/ ? $2 : $2":latest" }' "$d/Dockerfile")
+    docker pull $(awk '/^FROM[ \t\r\n\v\f]/ { print /:/ ? $2 : $2":latest" }' "$d/Dockerfile")
     docker build -t "$image:$rev" "$d"
     docker tag "$image:$rev" "$image:$TAG"
     docker push "$image"
