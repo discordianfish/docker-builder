@@ -45,6 +45,6 @@ do
     docker push "$image"
   done < "${TMP}.CHANGES" | tee "${TMP}.log"
   rm -r "$TMP"
-  rm "${TMP}.log"
+  rm "${TMP}.log" "${TMP}.CHANGES"
 done
 
