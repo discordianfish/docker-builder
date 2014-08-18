@@ -23,3 +23,8 @@ to be used for ssh into the container as root.
     git push # this will build and push
 
 
+## Caveats
+
+This image includes a pre-receive hook to do the buildings etc. Since
+the hooks are part of the git repo and that repo is a volume, it's not
+possible to uprade the pre-receive hook by just starting a new image.
