@@ -17,15 +17,13 @@ ADD service /etc/service
 RUN chown log:log /etc/service/sshd/log/main && chown log:log /etc/service/docker/log/main
 
 ADD     authorized_keys.root  /root/.ssh/authorized_keys
-# ADD doesn not honor USER, so we need to chown it. See #6119
 ADD     authorized_keys  /git/.ssh/authorized_keys
-RUN     chown git:git -R /git/.ssh/
 
-USER    git
 WORKDIR /git
-RUN     git init --bare universe.git
-ADD     pre-receive /git/universe.git/hooks/
 VOLUME  /git/universe.git
 
-USER root
+RUN     git init --bare universe.git
+ADD     pre-receive /git/universe.git/hooks/
+
+RUN     chown git:git -R /git/
 ENTRYPOINT [ "/usr/sbin/runsvdir-start" ]
