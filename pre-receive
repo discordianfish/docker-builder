@@ -36,15 +36,25 @@ do
     if [ -n "$REGISTRY" ]
     then
       image="$REGISTRY/$d"
+      test_image="$REGISTRY/tests"
     else
       image="$d"
+      test_image="tests"
     fi
     docker pull $(awk '/^FROM[ \t\r\n\v\f]/ { print /:/ ? $2 : $2":latest" }' "$d/Dockerfile")
     docker build -t "$image:$rev" "$d"
+    if [ -d "tests" ]
+    then
+      docker inspect $test_image > /dev/null || docker build -t $test_image:$rev tests/
+      if ! docker run --privileged $test_image:latest
+      then
+        echo "Integration tests failed"
+        exit 1
+      fi
+    fi
     docker tag "$image:$rev" "$image:$TAG"
     docker push "$image"
   done < "${TMP}.CHANGES" | tee "${TMP}.log"
   rm -r "$TMP"
   rm "${TMP}.log" "${TMP}.CHANGES"
 done
-
